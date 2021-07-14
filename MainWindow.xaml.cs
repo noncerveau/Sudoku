@@ -367,8 +367,10 @@ namespace Sudoku
 
         public MainWindow()
         {
+            int mapsize = TABLE_SIZE - 1 + 1;
+            //something
             InitializeComponent();
-            Map map = new Map(BOX_SIZE, TABLE_SIZE);
+            Map map = new Map(BOX_SIZE, mapsize);
             map.Show(gameField);
             
         }

@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:Sudoku"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <FontFamily x:Key="PT Sans">./#PT Sans</FontFamily>
     </Application.Resources>
 </Application>

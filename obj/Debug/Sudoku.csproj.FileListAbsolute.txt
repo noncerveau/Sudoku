@@ -16,3 +16,4 @@ C:\Users\admin\desktop\repos\Sudoku\obj\Debug\Sudoku.pdb
 C:\Users\admin\Desktop\repos\Sudoku\bin\Debug\System.ValueTuple.dll
 C:\Users\admin\Desktop\repos\Sudoku\bin\Debug\System.ValueTuple.xml
 C:\Users\admin\Desktop\repos\Sudoku\obj\Debug\Sudoku.csproj.CopyComplete
+C:\Users\admin\Desktop\repos\Sudoku\obj\Debug\App.baml

@@ -372,10 +372,5 @@ namespace Sudoku
             map.Show(gameField);
             
         }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("sda");
-        }
     }
 }

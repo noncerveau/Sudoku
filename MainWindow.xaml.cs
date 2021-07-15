@@ -9,6 +9,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -23,6 +24,7 @@ namespace Sudoku
         const string defaultCharSet = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZБГДЁЖЗИЙЛПФЦЧШЩЪЫЬЭЮЯ!@#$%^&*(";
         public bool isAMistakeMade = false;
         public Label lastSelected;
+        
 
         readonly SolidColorBrush foregroundStrong = new SolidColorBrush(Color.FromRgb(33, 33, 33));
         readonly SolidColorBrush foregroundPlaced = new SolidColorBrush(Color.FromRgb(19, 70, 151));
@@ -166,7 +168,7 @@ namespace Sudoku
                     charSet = charSet.Remove(0, 1) + charSet.Substring(0, 1);
                 }
 
-            for (int i = 0; i < 500; i++)
+            for (int i = 0; i < 300; i++)
             {
                 SwapRowsSmall();
                 SwapColumnsArea();
@@ -176,12 +178,11 @@ namespace Sudoku
                 SwapColumnsSmall();
             }
         }
-        public Map(int size, int mapSize)
+        public Map(int size, int mapSize, int difficulty)
         {
             cellSize = size;
             this.mapSize = mapSize;
             extendedMapSize = mapSize * mapSize;
-
 
             map = new Label[extendedMapSize, extendedMapSize];
 
@@ -196,18 +197,15 @@ namespace Sudoku
                     {
                         Width = size,
                         Height = size,
-                        Content = "",
+                        Content = solution[i, j],
                         Focusable = true,
                         HorizontalContentAlignment = HorizontalAlignment.Center,
                         BorderBrush = borderDefault,
-                        Foreground = foregroundPlaced,
+                        Foreground = foregroundStrong,
+                        Background = backgroundDefault,
                         FontSize = size / 2,
                         BorderThickness = new Thickness(.4)
                     };
-                    if (rand.Next(100) < 25) {
-                        l.Content = solution[i, j];
-                        l.Foreground = foregroundStrong;
-                    }
                     l.KeyDown += L_KeyDown;
                     l.Tag = $"{i},{j}";
                     if (i != 0)
@@ -220,6 +218,26 @@ namespace Sudoku
 
                     map[i, j] = l;
                 }
+            difficulty = extendedMapSize*extendedMapSize - difficulty;
+            while (difficulty > 0)
+            {
+                int x = rand.Next(extendedMapSize);
+                int y = rand.Next(extendedMapSize);
+
+                if (map[x,y].Content.ToString() != "")
+                {
+                    map[x, y].Content = "";
+                    map[x, y].Foreground = foregroundPlaced;
+                    difficulty--;
+                }
+            }
+            int count = 0;
+            foreach (Label label in map)
+            {
+                if (label.Content.ToString() == "")
+                count++;
+            }
+            MessageBox.Show(count.ToString());
         }
 
         private void L_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -237,33 +255,7 @@ namespace Sudoku
 
             map[x, y].Content = "";
             map[x, y].Foreground = foregroundPlaced;
-            CheckForMistakes();
             Select(map[x, y]);
-        }
-
-
-
-        private void CheckForMistakes()
-        {
-            isAMistakeMade = false;
-
-            List<Label> missplaced = new List<Label>();
-
-            foreach (Label l in map) if (l.Foreground == foregroundMistake) l.Foreground = foregroundMistake;
-
-            for (int i = 0; i < extendedMapSize; i++)
-                for (int j = 0; j < extendedMapSize; j++)
-                {
-                    if ((string)map[i,j].Content != "" && map[i, j].Content.ToString() != solution[i, j])
-                    {
-                        isAMistakeMade = true;
-                        map[i, j].Foreground = foregroundMistake;
-                    }
-                }
-
-            
-
-            
         }
 
         private void L_KeyDown(object sender, KeyEventArgs e)
@@ -350,10 +342,13 @@ namespace Sudoku
             {
                 Clear(x, y);
                 map[x, y].Content = ch;
-                Select(map[x, y]);
+                if ((string)map[x, y].Content != "" && map[x, y].Content.ToString() != solution[x, y])
+                {
+                    map[x, y].Foreground = foregroundMistake;
+                }
             }
 
-            CheckForMistakes();
+            //CheckForMistakes();
             Select(map[x, y]);
             
         }
@@ -362,15 +357,97 @@ namespace Sudoku
     public partial class MainWindow : Window
     {
         const int BOX_SIZE = 30;
-        const int TABLE_SIZE = 3;
-        const int DIFFICULTY = 3;
-
+        UIElement focused;
+        Map map;
         public MainWindow()
         {
             InitializeComponent();
-            Map map = new Map(BOX_SIZE, TABLE_SIZE);
+            focused = Menu;
+        }
+
+        private void newGame_Click(object sender, RoutedEventArgs e)
+        {
+            int difficulty;
+            //easy 40
+            //meidum 33
+            //hard 27
+            //expert 22
+            switch ((sender as Button).Tag.ToString())
+            {
+                case "easy": map = new Map(30, 3, 40); break;
+                case "medium": map = new Map(BOX_SIZE, 3, 33); break;
+                case "hard": map = new Map(BOX_SIZE, 3, 27); break;
+                case "expert": map = new Map(BOX_SIZE, 3, 22); break;
+                case "giant": map = new Map(BOX_SIZE, 4, 25); break;
+                case "special": SpecialGameParams.Visibility = Visibility.Visible; return;
+            }
+            Menu.Visibility = Visibility.Hidden;
+            levels.Visibility = Visibility.Hidden;
+            gameSession.Visibility = Visibility.Visible;
             map.Show(gameField);
+        }
+        private void newGameWithParams_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            int size = 3;
+            foreach (RadioButton radio in specialGameMapSize.Children)
+                if ((bool)radio.IsChecked)
+                {
+                    size = int.Parse(radio.Content.ToString());
+                    break;
+                }
+
+            map = new Map(BOX_SIZE, size, int.Parse(specialGameFilledCells.Content.ToString()));
+            map.Show(gameField);
+            SpecialGameParams.Visibility = Visibility.Hidden;
+            Menu.Visibility = Visibility.Hidden;
+            levels.Visibility = Visibility.Hidden;
+            gameSession.Visibility = Visibility.Visible;
+        }
+
+        private void newGame_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            DoubleAnimation moveUp = new DoubleAnimation(0, TimeSpan.FromMilliseconds(180))
+            {
+                EasingFunction = new CubicEase() { EasingMode = EasingMode.EaseOut }
+            };
+            TranslateTransform t = levels.RenderTransform as TranslateTransform;
+            t.BeginAnimation(TranslateTransform.YProperty, moveUp);
+            focused = levels;
             
+        }
+
+        private void Menu_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (focused as StackPanel == levels) { 
+                
+                DoubleAnimation moveDown = new DoubleAnimation(290, TimeSpan.FromMilliseconds(180))
+                {
+                    EasingFunction = new CubicEase() { EasingMode = EasingMode.EaseOut }
+                };
+                TranslateTransform t = levels.RenderTransform as TranslateTransform;
+                t.BeginAnimation(TranslateTransform.YProperty, moveDown);
+            }
+            focused = Menu;
+        }
+
+        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (slider == null) return;
+            int size = int.Parse((sender as RadioButton).Content.ToString());
+
+            slider.Minimum = (int)(size * size * size * size * 0.1);
+            labelMinimum.Content = (int)(size * size * size * size * 0.1);
+
+            slider.Maximum = (int)(size * size * size * size - 1);
+            labelMaximum.Content = (int)(size * size * size * size - 1);
+
+            slider.Value = (int)(size * size * size * size * .3);
+        }
+
+        private void SpecialGameParams_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!((sender as Grid).Children[0] as Border).IsMouseOver)
+                SpecialGameParams.Visibility = Visibility.Hidden;
         }
     }
 }
